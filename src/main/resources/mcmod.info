@@ -1,0 +1,19 @@
+[
+  {
+    "modid": "sunburn",
+    "name": "Sunburn",
+    "description": "",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": [
+      "DoubleDoorDev",
+      "Claycorp"
+    ],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
