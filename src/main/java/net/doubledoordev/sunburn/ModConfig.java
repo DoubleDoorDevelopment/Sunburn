@@ -30,6 +30,10 @@ public class ModConfig
     @Config.Comment("The player only burns if they see the sky.")
     public static boolean playerMustSeeSky = true;
 
+    @Config.LangKey("sunburn.config.wetStopsBurn")
+    @Config.Comment("The player being wet stops the burn. (Rain and water stops burning)")
+    public static boolean wetStopsBurn = true;
+
     @Config.LangKey("sunburn.config.burnylevel")
     @Config.Comment("If the player is below this Y level they will not burn, If they are above it they burn. This setting only works if playerMustSeeSky is false!")
     @Config.RangeInt(min = 0, max = Integer.MAX_VALUE)
