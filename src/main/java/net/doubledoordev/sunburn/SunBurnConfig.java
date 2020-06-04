@@ -71,11 +71,6 @@ public class SunBurnConfig
                     .translation("sunburn.config.burntime.stop")
                     .defineInRange("burnTimeStop", 15000, 0, Integer.MAX_VALUE);
 
-            lengthOfDay = builder
-                    .comment("How long is one day. Normal day length 24000. DO NOT CHANGE UNLESS YOU CHANGE THE DAY LENGTH!")
-                    .translation("sunburn.config.daylength")
-                    .defineInRange("lengthOfDay", 24000, 0, Integer.MAX_VALUE);
-
             lengthOfBurn = builder
                     .comment("How long a player is set to burn for. This is how long the player will burn AFTER they are safe.")
                     .translation("sunburn.config.burnlength")

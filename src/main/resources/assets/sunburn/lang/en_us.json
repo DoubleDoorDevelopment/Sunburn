@@ -2,7 +2,6 @@
   "sunburn.config.title": "Sunbun Config",
   "sunburn.config.burntime.start": "Burn start time",
   "sunburn.config.burntime.stop": "Burn stop time",
-  "sunburn.config.daylength": "Length of one day",
   "sunburn.config.burnlength": "Time to burn for",
   "sunburn.config.playermustseesky": "Must see sky to burn",
   "sunburn.config.burnylevel": "Y Level to burn at",

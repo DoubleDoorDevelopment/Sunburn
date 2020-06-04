@@ -28,7 +28,7 @@ public class Sunburn
     public void onPlayerTickEvent(TickEvent.PlayerTickEvent event)
     {
         PlayerEntity player = event.player;
-        long time = player.getEntityWorld().getGameTime() % SunBurnConfig.GENERAL.lengthOfDay.get();
+        long time = player.getEntityWorld().getDayTime();
 
         if (event.side.isClient() | event.phase == TickEvent.Phase.END) // Need to filter these out cause they cause issues.
             return;
