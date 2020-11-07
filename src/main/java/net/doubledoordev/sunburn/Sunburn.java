@@ -1,5 +1,7 @@
 package net.doubledoordev.sunburn;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ArmorItem;
@@ -15,6 +17,8 @@ import net.minecraftforge.fml.config.ModConfig;
 public class Sunburn
 {
     DamageSource damageSource = new DamageSource("sunburn").setDamageBypassesArmor().setDifficultyScaled();
+    private static final Logger LOGGER = LogManager.getLogger();
+    int tickCounterToStopLogSpam = 100;
 
     public Sunburn()
     {
@@ -27,7 +31,10 @@ public class Sunburn
     @SubscribeEvent
     public void onPlayerTickEvent(TickEvent.PlayerTickEvent event)
     {
+        tickCounterToStopLogSpam++;
+
         PlayerEntity player = event.player;
+        String dimResourceLocation = player.world.func_234923_W_().func_240901_a_().toString();
         long time = player.getEntityWorld().getDayTime();
 
         if (event.side.isClient() | event.phase == TickEvent.Phase.END) // Need to filter these out cause they cause issues.
@@ -52,28 +59,32 @@ public class Sunburn
                 player.getItemStackFromSlot(EquipmentSlotType.FEET).getItem() instanceof ArmorItem)
             return;
 
-        for (int dim : SunBurnConfig.GENERAL.dimList.get()) // for each dim in the list.
+        // This only exists to keep the log spam down.
+        if (SunBurnConfig.GENERAL.debug.get() && tickCounterToStopLogSpam > 100)
         {
-            if (SunBurnConfig.GENERAL.whitelistOrBlacklist.get()) // Check whitelist/blacklist state. True = Whitelist
-            {
-                // Whitelist methods. (Damage only in)
-                if (player.dimension.getId() == dim) // is the player in this dim?
-                    damageConditionCheck(player);
-            }
-            else
-            {
-                // Blacklist method. (Damage everything but)
-                if (player.dimension.getId() != dim) // is the player not in this dim?
-                    damageConditionCheck(player);
-            }
+            LOGGER.info(player.getDisplayName() + " is in Dim: [" + dimResourceLocation + "] To disable set debug to false in the config. Copy paste the text inside the [] to the dimlist to effect/block this dim.");
+            tickCounterToStopLogSpam = 0;
+        }
+
+        if (SunBurnConfig.GENERAL.whitelistOrBlacklist.get()) // Check whitelist/blacklist state. True = Whitelist
+        {
+            // Whitelist methods. (Damage only in)
+            if (SunBurnConfig.GENERAL.dimList.get().contains(dimResourceLocation)) // is the player in this dim?
+                damageConditionCheck(player);
+        }
+        else
+        {
+            // Blacklist method. (Damage everything but)
+            if (!SunBurnConfig.GENERAL.dimList.get().contains(dimResourceLocation)) // is the player not in this dim?
+                damageConditionCheck(player);
         }
     }
 
     private void damageConditionCheck(PlayerEntity player)
     {
         // Does the player need to see they sky or do we always burn over a Y level?
-        if (SunBurnConfig.GENERAL.playerMustSeeSky.get() && player.world.canBlockSeeSky(player.getPosition()) | SunBurnConfig.GENERAL.alwaysBurnOverYLevel.get() &&
-                player.getPosition().getY() >= SunBurnConfig.GENERAL.burnOverYLevel.get())
+        if (SunBurnConfig.GENERAL.playerMustSeeSky.get() && player.world.canBlockSeeSky(player.func_233580_cy_()) | SunBurnConfig.GENERAL.alwaysBurnOverYLevel.get() &&
+                player.func_233580_cy_().getY() >= SunBurnConfig.GENERAL.burnOverYLevel.get())
         {
             damagePlayer(player); // apply damage accordingly.
         }

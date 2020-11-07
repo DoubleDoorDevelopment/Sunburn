@@ -25,17 +25,16 @@ public class SunBurnConfig
 
     public static class General
     {
-        public static List<? extends Integer> dimList()
+        public static List<? extends String> dimList()
         {
-            ArrayList<Integer> list = new ArrayList<>();
-            list.add(-1);
+            ArrayList<String> list = new ArrayList<>();
+            list.add("minecraft:the_nether");
 
             return list;
         }
 
         public IntValue burnTimeStart;
         public IntValue burnTimeStop;
-        public IntValue lengthOfDay;
         public IntValue lengthOfBurn;
         public IntValue burnOverYLevel;
         public IntValue waitToBurnTime;
@@ -48,8 +47,9 @@ public class SunBurnConfig
         public BooleanValue hatsBlockBurn;
         public BooleanValue bypassFireResist;
         public BooleanValue whitelistOrBlacklist;
+        public BooleanValue debug;
 
-        public ConfigValue<List<? extends Integer>> dimList;
+        public ConfigValue<List<? extends String>> dimList;
 
         General(Builder builder)
         {
@@ -59,7 +59,7 @@ public class SunBurnConfig
             dimList = builder
                     .comment("Dimension list, whitelistOrBlacklist changes how this works!")
                     .translation("sunburn.config.dimlist")
-                    .defineList("dimBlacklist", SunBurnConfig.General.dimList(), p -> p instanceof Integer);
+                    .defineList("dimBlacklist", SunBurnConfig.General.dimList(), p -> p instanceof String);
 
             burnTimeStart = builder
                     .comment("Time of day burning starts in ticks. Normal day length is 0 to 23999.")
@@ -125,6 +125,11 @@ public class SunBurnConfig
                     .comment("Changes how dimList is treated, True = Whitelist, False = Blacklist.")
                     .translation("sunburn.config.whitelistorblacklist")
                     .define("whitelistOrBlacklist", false);
+
+            debug = builder
+                    .comment("Enable Dim to console output for getting ID's.")
+                    .translation("sunburn.config.debug")
+                    .define("debug", false);
         }
     }
 }
