@@ -5,7 +5,11 @@ import org.apache.logging.log4j.Logger;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ArmorItem;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.LightType;
+import net.minecraft.world.lighting.IWorldLightListener;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -16,7 +20,7 @@ import net.minecraftforge.fml.config.ModConfig;
 @Mod("sunburn")
 public class Sunburn
 {
-    DamageSource damageSource = new DamageSource("sunburn").setDamageBypassesArmor().setDifficultyScaled();
+    DamageSource damageSource = new DamageSource("sunburn").bypassArmor().setScalesWithDifficulty();
     private static final Logger LOGGER = LogManager.getLogger();
     int tickCounterToStopLogSpam = 100;
 
@@ -34,30 +38,42 @@ public class Sunburn
         tickCounterToStopLogSpam++;
 
         PlayerEntity player = event.player;
-        String dimResourceLocation = player.world.func_234923_W_().func_240901_a_().toString();
-        long time = player.getEntityWorld().getDayTime();
+        String dimResourceLocation = player.level.dimension().location().toString();
+        long time = player.level.getDayTime();
 
         if (event.side.isClient() | event.phase == TickEvent.Phase.END) // Need to filter these out cause they cause issues.
             return;
 
-        if (SunBurnConfig.GENERAL.wetStopsBurn.get() && player.isWet())
-            return;
-
         if (player.isCreative() || player.isSpectator() || // If the player isn't in creative or spectator.
-                player.ticksExisted <= SunBurnConfig.GENERAL.waitToBurnTime.get() ||     // If the player entity is younger than the safe wait time.
+                player.tickCount <= SunBurnConfig.GENERAL.waitToBurnTime.get() ||     // If the player entity is younger than the safe wait time.
                 time <= SunBurnConfig.GENERAL.burnTimeStart.get() || time >= SunBurnConfig.GENERAL.burnTimeStop.get()) // If the current time is below the burn start or the time is after the burn stop.
             return;
 
+        ItemStack headStack = player.getItemBySlot(EquipmentSlotType.HEAD);
+        ItemStack chestStack = player.getItemBySlot(EquipmentSlotType.CHEST);
+        ItemStack legStack = player.getItemBySlot(EquipmentSlotType.LEGS);
+        ItemStack feetStack = player.getItemBySlot(EquipmentSlotType.FEET);
+
         // if hats block burn and the player is wearing one, ignore the burn.
-        if (SunBurnConfig.GENERAL.hatsBlockBurn.get() && player.getItemStackFromSlot(EquipmentSlotType.HEAD).getItem() instanceof ArmorItem)
+        if (SunBurnConfig.GENERAL.hatsBlockBurn.get() && headStack.getItem() instanceof ArmorItem)
+        {
+            damageGearRandomly(player, headStack, EquipmentSlotType.HEAD);
             return;
+        }
 
         // if full armor blocks burn and the player is wearing something in each slot that is armor, ignore the burn.
-        if (SunBurnConfig.GENERAL.fullArmorBlocksBurn.get() && player.getItemStackFromSlot(EquipmentSlotType.HEAD).getItem() instanceof ArmorItem &&
-                player.getItemStackFromSlot(EquipmentSlotType.CHEST).getItem() instanceof ArmorItem &&
-                player.getItemStackFromSlot(EquipmentSlotType.LEGS).getItem() instanceof ArmorItem &&
-                player.getItemStackFromSlot(EquipmentSlotType.FEET).getItem() instanceof ArmorItem)
+        if (SunBurnConfig.GENERAL.fullArmorBlocksBurn.get() && player.getItemBySlot(EquipmentSlotType.HEAD).getItem() instanceof ArmorItem &&
+                player.getItemBySlot(EquipmentSlotType.CHEST).getItem() instanceof ArmorItem &&
+                player.getItemBySlot(EquipmentSlotType.LEGS).getItem() instanceof ArmorItem &&
+                player.getItemBySlot(EquipmentSlotType.FEET).getItem() instanceof ArmorItem)
+        {
+            damageGearRandomly(player, headStack, EquipmentSlotType.HEAD);
+            damageGearRandomly(player, chestStack, EquipmentSlotType.CHEST);
+            damageGearRandomly(player, legStack, EquipmentSlotType.LEGS);
+            damageGearRandomly(player, feetStack, EquipmentSlotType.FEET);
+
             return;
+        }
 
         // This only exists to keep the log spam down.
         if (SunBurnConfig.GENERAL.debug.get() && tickCounterToStopLogSpam > 100)
@@ -82,12 +98,19 @@ public class Sunburn
 
     private void damageConditionCheck(PlayerEntity player)
     {
-        // Does the player need to see they sky or do we always burn over a Y level?
-        if (SunBurnConfig.GENERAL.playerMustSeeSky.get() && player.world.canBlockSeeSky(player.func_233580_cy_()) | SunBurnConfig.GENERAL.alwaysBurnOverYLevel.get() &&
-                player.func_233580_cy_().getY() >= SunBurnConfig.GENERAL.burnOverYLevel.get())
-        {
+        BlockPos playerPos = player.blockPosition();
+        IWorldLightListener blockLightingLayer = player.level.getLightEngine().getLayerListener(LightType.BLOCK);
+
+        // Will the player burn if they see the sky?
+        // Will the player burn if they are over the Y level?
+        // Will the player burn if in a specific light level?
+        if (SunBurnConfig.GENERAL.playerMustSeeSky.get() && player.level.canSeeSky(playerPos) |
+                SunBurnConfig.GENERAL.alwaysBurnOverYLevel.get() && playerPos.getY() >= SunBurnConfig.GENERAL.burnOverYLevel.get())
             damagePlayer(player); // apply damage accordingly.
-        }
+
+
+        if (SunBurnConfig.GENERAL.burnInLight.get() && blockLightingLayer.getLightValue(playerPos) >= SunBurnConfig.GENERAL.burnLightLevel.get())
+            damagePlayer(player);
     }
 
     private void damagePlayer(PlayerEntity player)
@@ -95,9 +118,15 @@ public class Sunburn
         if (SunBurnConfig.GENERAL.bypassFireResist.get()) // Should we bypass the fire resist effect?
         {
             // if so damage them with our damage.
-            player.attackEntityFrom(damageSource, SunBurnConfig.GENERAL.bypassDamge.get());
-            player.setFire(1);
+            player.hurt(damageSource, SunBurnConfig.GENERAL.bypassDamage.get());
+            player.setSecondsOnFire(1);
         }
-        else player.setFire(SunBurnConfig.GENERAL.lengthOfBurn.get()); //otherwise use a regular burn.
+        else player.setSecondsOnFire(SunBurnConfig.GENERAL.lengthOfBurn.get()); //otherwise use a regular burn.
+    }
+
+    private void damageGearRandomly(PlayerEntity player, ItemStack stack, EquipmentSlotType equipmentSlot)
+    {
+        if (SunBurnConfig.GENERAL.damageEquippedGear.get() && player.level.random.nextFloat() * 30.0F < (player.getBrightness() - 0.4F) * 2.0F)
+            stack.hurtAndBreak(1, player, (player1 -> player1.broadcastBreakEvent(equipmentSlot)));
     }
 }
