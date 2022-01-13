@@ -10,7 +10,7 @@ buildscript {
 apply plugin: 'net.minecraftforge.gradle'
 //Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 
-version = '3.2.1'
+version = '3.2.2'
 group = 'net.doubledoordev.sunburn' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'sunburn'
 
@@ -53,7 +53,7 @@ dependencies {
     // Specify the version of Minecraft to use, If this is any group other then 'net.minecraft' it is assumed
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
-    minecraft 'net.minecraftforge:forge:1.18-38.0.15'
+    minecraft 'net.minecraftforge:forge:1.18.1-39.0.19'
 
     // you may put jars on which you depend on in ./libs
     // or you may define them like so..
