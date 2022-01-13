@@ -115,7 +115,7 @@ public class SunBurnConfig
             burnOverYLevel = builder
                     .comment("If the player is below this Y level they will not burn, If they are above it they burn. This setting only works if playerMustSeeSky is false!")
                     .translation("sunburn.config.burnylevel")
-                    .defineInRange("burnOverYLevel", 64, Integer.MAX_VALUE, Integer.MAX_VALUE);
+                    .defineInRange("burnOverYLevel", 64, Integer.MIN_VALUE, Integer.MAX_VALUE);
 
             dimList = builder
                     .comment("Dimension list, whitelistOrBlacklist changes how this works!")
