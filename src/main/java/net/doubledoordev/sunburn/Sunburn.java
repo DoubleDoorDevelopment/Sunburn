@@ -105,13 +105,27 @@ public class Sunburn
         BlockPos playerPos = player.blockPosition();
         LayerLightEventListener blockLightingLayer = player.level.getLightEngine().getLayerListener(LightLayer.BLOCK);
 
-        // Will the player burn if they see the sky?
-        // Will the player burn if they are over the Y level?
-        // Will the player burn if in a specific light level?
-        if (SunBurnConfig.GENERAL.playerMustSeeSky.get() && player.level.canSeeSky(playerPos) |
-                SunBurnConfig.GENERAL.alwaysBurnOverYLevel.get() && playerPos.getY() >= SunBurnConfig.GENERAL.burnOverYLevel.get())
-            damagePlayer(player); // apply damage accordingly.
-
+        // If we need to check for Y level burn.
+        if (SunBurnConfig.GENERAL.alwaysBurnOverYLevel.get())
+        {
+            // Check Y level requirement.
+            if (playerPos.getY() >= SunBurnConfig.GENERAL.burnOverYLevel.get())
+            {
+                // Check if they need to see the sky to burn. If they do not, Burn them.
+                if (SunBurnConfig.GENERAL.playerMustSeeSky.get())
+                {
+                    // If they can see sky burn them.
+                    if (player.level.canSeeSky(playerPos))
+                    {
+                        damagePlayer(player);
+                    }
+                }
+                else damagePlayer(player);
+            }
+        }
+        // Do sky burns if they see sky and don't care about Y.
+        else if (SunBurnConfig.GENERAL.playerMustSeeSky.get() && player.level.canSeeSky(playerPos))
+            damagePlayer(player);
 
         if (SunBurnConfig.GENERAL.burnInLight.get() && blockLightingLayer.getLightValue(playerPos) >= SunBurnConfig.GENERAL.burnLightLevel.get())
             damagePlayer(player);
