@@ -1,38 +1,27 @@
 package net.doubledoordev.sunburn;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.commons.lang3.tuple.Pair;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.common.ForgeConfigSpec.BooleanValue;
 import net.minecraftforge.common.ForgeConfigSpec.Builder;
 import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
 import net.minecraftforge.common.ForgeConfigSpec.IntValue;
+import org.apache.commons.lang3.tuple.Pair;
 
-public class SunBurnConfig
-{
+import java.util.ArrayList;
+import java.util.List;
+
+public class SunBurnConfig {
 
     public static final SunBurnConfig.General GENERAL;
     static final ForgeConfigSpec spec;
 
-    static
-    {
+    static {
         final Pair<General, ForgeConfigSpec> specPair = new Builder().configure(SunBurnConfig.General::new);
         spec = specPair.getRight();
         GENERAL = specPair.getLeft();
     }
 
-    public static class General
-    {
-        public static List<? extends String> dimList()
-        {
-            ArrayList<String> list = new ArrayList<>();
-            list.add("minecraft:the_nether");
-
-            return list;
-        }
-
+    public static class General {
         public IntValue burnTimeStart;
         public IntValue burnTimeStop;
         public IntValue lengthOfBurn;
@@ -40,7 +29,6 @@ public class SunBurnConfig
         public IntValue waitToBurnTime;
         public IntValue bypassDamage;
         public IntValue burnLightLevel;
-
         public BooleanValue playerMustSeeSky;
         public BooleanValue wetStopsBurn;
         public BooleanValue alwaysBurnOverYLevel;
@@ -52,11 +40,9 @@ public class SunBurnConfig
         public BooleanValue damageEquippedGear;
         public BooleanValue powderSnowStopsBurn;
         public BooleanValue debug;
-
         public ConfigValue<List<? extends String>> dimList;
 
-        General(Builder builder)
-        {
+        General(Builder builder) {
             builder.comment("General configuration settings")
                     .push("General");
 
@@ -167,6 +153,13 @@ public class SunBurnConfig
                     .define("debug", false);
 
             builder.pop();
+        }
+
+        public static List<? extends String> dimList() {
+            ArrayList<String> list = new ArrayList<>();
+            list.add("minecraft:the_nether");
+
+            return list;
         }
     }
 }
