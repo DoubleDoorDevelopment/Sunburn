@@ -17,14 +17,14 @@ import net.minecraftforge.fml.config.ModConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Mod("sunburn")
-public class Sunburn {
-    private static final Logger LOGGER = LogManager.getLogger();
+@Mod("${modID}")
+public class SunBurn {
     DamageSource damageSource = new DamageSource("sunburn").bypassArmor().setScalesWithDifficulty();
+    private static final Logger LOGGER = LogManager.getLogger();
     int tickCounterToStopLogSpam = 100;
 
-    public Sunburn() {
-        MinecraftForge.EVENT_BUS.register(Sunburn.class);
+    public SunBurn() {
+        MinecraftForge.EVENT_BUS.register(SunBurn.class);
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, SunBurnConfig.spec);
 
         MinecraftForge.EVENT_BUS.register(this);

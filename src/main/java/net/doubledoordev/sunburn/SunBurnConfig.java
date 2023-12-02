@@ -22,6 +22,13 @@ public class SunBurnConfig {
     }
 
     public static class General {
+        public static List<? extends String> dimList() {
+            ArrayList<String> list = new ArrayList<>();
+            list.add("minecraft:the_nether");
+
+            return list;
+        }
+
         public IntValue burnTimeStart;
         public IntValue burnTimeStop;
         public IntValue lengthOfBurn;
@@ -29,6 +36,7 @@ public class SunBurnConfig {
         public IntValue waitToBurnTime;
         public IntValue bypassDamage;
         public IntValue burnLightLevel;
+
         public BooleanValue playerMustSeeSky;
         public BooleanValue wetStopsBurn;
         public BooleanValue alwaysBurnOverYLevel;
@@ -40,6 +48,7 @@ public class SunBurnConfig {
         public BooleanValue damageEquippedGear;
         public BooleanValue powderSnowStopsBurn;
         public BooleanValue debug;
+
         public ConfigValue<List<? extends String>> dimList;
 
         General(Builder builder) {
@@ -153,13 +162,6 @@ public class SunBurnConfig {
                     .define("debug", false);
 
             builder.pop();
-        }
-
-        public static List<? extends String> dimList() {
-            ArrayList<String> list = new ArrayList<>();
-            list.add("minecraft:the_nether");
-
-            return list;
         }
     }
 }
