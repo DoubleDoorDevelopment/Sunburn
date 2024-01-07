@@ -1,7 +1,7 @@
-![https://www.curseforge.com/minecraft/mc-mods/sun-burn](https://img.shields.io/badge/CurseForge-%23F16436?logo=curseforge&logoColor=white&link=https%3A%2F%2Fwww.curseforge.com%2Fminecraft%2Fmc-mods%2Fsun-burn
-)
-![https://discord.gg/M5uRF25](https://img.shields.io/badge/DoubleDoorDevelopment-%235865F2?logo=discord&logoColor=white&link=https%3A%2F%2Fdiscord.gg%2FM5uRF25
-)
+<img alt="CurseForge Link" src="https://img.shields.io/badge/CurseForge-%23F16436?logo=curseforge&logoColor=white&link=https%3A%2F%2Fwww.curseforge.com%2Fminecraft%2Fmc-mods%2Fsun-burn">
+
+<img alt="Discord Link" src="https://img.shields.io/badge/DoubleDoorDevelopment-%235865F2?logo=discord&logoColor=white&link=https%3A%2F%2Fdiscord.gg%2FM5uRF25">
+
 
 # Sun-Burn 1.18.X
 
