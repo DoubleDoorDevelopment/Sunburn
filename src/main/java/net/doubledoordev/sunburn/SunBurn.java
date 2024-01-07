@@ -1,133 +1,169 @@
 package net.doubledoordev.sunburn;
 
+import net.doubledoordev.sunburn.data.BurnRulesData;
+import net.doubledoordev.sunburn.data.BurnRulesValidator;
+import net.doubledoordev.sunburn.data.DataManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.lighting.LayerLightEventListener;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import java.util.Map;
 
 @Mod("${modID}")
 public class SunBurn {
-    DamageSource damageSource = new DamageSource("sunburn").bypassArmor().setScalesWithDifficulty();
-    private static final Logger LOGGER = LogManager.getLogger();
-    int tickCounterToStopLogSpam = 100;
+    public static final String MOD_ID = "${modID}";
+    DamageSource damageSource = new DamageSource("sunburn");
 
     public SunBurn() {
         MinecraftForge.EVENT_BUS.register(SunBurn.class);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, SunBurnConfig.spec);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, SunBurnConfig.spec);
 
         MinecraftForge.EVENT_BUS.register(this);
     }
 
     @SubscribeEvent
+    public void dataLoader(AddReloadListenerEvent event) {
+        event.addListener(new DataManager("burn_data"));
+    }
+
+    @SubscribeEvent
     public void onPlayerTickEvent(TickEvent.PlayerTickEvent event) {
-        tickCounterToStopLogSpam++;
+        // Need to filter the client and end phase because of issues.
+        boolean isServerStartPhase = event.side.isClient() || event.phase == TickEvent.Phase.END;
+
+        if (isServerStartPhase)
+            return;
 
         Player player = event.player;
-        String dimResourceLocation = player.level.dimension().location().toString();
-        long time = player.level.getDayTime() % 24000L;
+        ResourceLocation targetDimDataLocation = player.level.dimension().location();
+        int dayCount = (int) (player.level.getDayTime() / SunBurnConfig.SERVER.lengthOfDay.get() % 2147483647L);
 
-        if (event.side.isClient() | event.phase == TickEvent.Phase.END) // Need to filter these out cause they cause issues.
-            return;
+        for (Map.Entry<String, BurnRulesData> burnData : DataManager.rulesTable.row(targetDimDataLocation).entrySet()) {
+            String dayString = burnData.getKey();
+            BurnRulesData burnRules = burnData.getValue();
 
-        if (SunBurnConfig.GENERAL.wetStopsBurn.get() && player.isInWaterRainOrBubble() |
-                SunBurnConfig.GENERAL.powderSnowStopsBurn.get() && (player.isInPowderSnow || player.wasInPowderSnow))
-            return;
+            if (BurnRulesValidator.isValidDay(targetDimDataLocation, dayString, dayCount) && inValidBiome(burnRules, player) &&
+                    validateTarget(burnRules, player)) {
 
-        if (player.isCreative() || player.isSpectator() || // If the player isn't in creative or spectator.
-                player.tickCount <= SunBurnConfig.GENERAL.waitToBurnTime.get() ||     // If the player entity is younger than the safe wait time.
-                time <= SunBurnConfig.GENERAL.burnTimeStart.get() || time >= SunBurnConfig.GENERAL.burnTimeStop.get()) // If the current time is below the burn start or the time is after the burn stop.
-            return;
+                if (applyPlayerDamage(burnRules, player)) {
+                    ItemStack headStack = player.getItemBySlot(EquipmentSlot.HEAD);
 
-        ItemStack headStack = player.getItemBySlot(EquipmentSlot.HEAD);
-        ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
-        ItemStack legStack = player.getItemBySlot(EquipmentSlot.LEGS);
-        ItemStack feetStack = player.getItemBySlot(EquipmentSlot.FEET);
+                    if (burnRules.fullArmorToBlockBurn()) {
+                        ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
+                        ItemStack legStack = player.getItemBySlot(EquipmentSlot.LEGS);
+                        ItemStack feetStack = player.getItemBySlot(EquipmentSlot.FEET);
 
-        // if hats block burn and the player is wearing one, ignore the burn.
-        if (SunBurnConfig.GENERAL.hatsBlockBurn.get() && headStack.getItem() instanceof ArmorItem) {
-            damageGearRandomly(player, headStack, EquipmentSlot.HEAD);
-            return;
-        }
+                        if (headStack.is(TagKeys.SUN_BLOCKING_ITEMS) && chestStack.is(TagKeys.SUN_BLOCKING_ITEMS) &&
+                                legStack.is(TagKeys.SUN_BLOCKING_ITEMS) && feetStack.is(TagKeys.SUN_BLOCKING_ITEMS)) {
+                            damageGearRandomly(burnRules, player, headStack, EquipmentSlot.HEAD);
+                            damageGearRandomly(burnRules, player, chestStack, EquipmentSlot.CHEST);
+                            damageGearRandomly(burnRules, player, legStack, EquipmentSlot.LEGS);
+                            damageGearRandomly(burnRules, player, feetStack, EquipmentSlot.FEET);
+                            return;
+                        }
+                    }
 
-        // if full armor blocks burn and the player is wearing something in each slot that is armor, ignore the burn.
-        if (SunBurnConfig.GENERAL.fullArmorBlocksBurn.get() && player.getItemBySlot(EquipmentSlot.HEAD).getItem() instanceof ArmorItem &&
-                player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof ArmorItem &&
-                player.getItemBySlot(EquipmentSlot.LEGS).getItem() instanceof ArmorItem &&
-                player.getItemBySlot(EquipmentSlot.FEET).getItem() instanceof ArmorItem) {
-            damageGearRandomly(player, headStack, EquipmentSlot.HEAD);
-            damageGearRandomly(player, chestStack, EquipmentSlot.CHEST);
-            damageGearRandomly(player, legStack, EquipmentSlot.LEGS);
-            damageGearRandomly(player, feetStack, EquipmentSlot.FEET);
+                    if (headStack.is(TagKeys.SUN_BLOCKING_ITEMS)) {
+                        damageGearRandomly(burnRules, player, headStack, EquipmentSlot.HEAD);
+                        return;
+                    }
+                }
 
-            return;
-        }
+            }
 
-        // This only exists to keep the log spam down.
-        if (SunBurnConfig.GENERAL.debug.get() && tickCounterToStopLogSpam > 100) {
-            LOGGER.info(player.getDisplayName() + " is in Dim: [" + dimResourceLocation + "] To disable set debug to false in the config. Copy paste the text inside the [] to the dimlist to effect/block this dim.");
-            tickCounterToStopLogSpam = 0;
-        }
-
-        if (SunBurnConfig.GENERAL.whitelistOrBlacklist.get()) // Check whitelist/blacklist state. True = Whitelist
-        {
-            // Whitelist methods. (Damage only in)
-            if (SunBurnConfig.GENERAL.dimList.get().contains(dimResourceLocation)) // is the player in this dim?
-                damageConditionCheck(player);
-        } else {
-            // Blacklist method. (Damage everything but)
-            if (!SunBurnConfig.GENERAL.dimList.get().contains(dimResourceLocation)) // is the player not in this dim?
-                damageConditionCheck(player);
         }
     }
 
-    private void damageConditionCheck(Player player) {
-        BlockPos playerPos = player.blockPosition();
-        LayerLightEventListener blockLightingLayer = player.level.getLightEngine().getLayerListener(LightLayer.BLOCK);
+    private boolean inValidBiome(BurnRulesData burnRules, Player player) {
+        if (player.level.getBiome(player.blockPosition()).is(TagKeys.ALWAYS_SAFE_BIOMES))
+            return false;
 
-        // If we need to check for Y level burn.
-        if (SunBurnConfig.GENERAL.alwaysBurnOverYLevel.get()) {
-            // Check Y level requirement.
-            if (playerPos.getY() >= SunBurnConfig.GENERAL.burnOverYLevel.get()) {
-                // Check if they need to see the sky to burn. If they do not, Burn them.
-                if (SunBurnConfig.GENERAL.playerMustSeeSky.get()) {
-                    // If they can see sky burn them.
-                    if (player.level.canSeeSky(playerPos)) {
-                        damagePlayer(player);
-                    }
-                } else damagePlayer(player);
+        if (burnRules.biomeList().isEmpty())
+            return true;
+
+        for (ResourceLocation biomeResource : burnRules.biomeList()) {
+            if (player.level.getBiome(player.blockPosition()).is(biomeResource)) {
+                return true;
             }
         }
-        // Do sky burns if they see sky and don't care about Y.
-        else if (SunBurnConfig.GENERAL.playerMustSeeSky.get() && player.level.canSeeSky(playerPos))
-            damagePlayer(player);
-
-        if (SunBurnConfig.GENERAL.burnInLight.get() && blockLightingLayer.getLightValue(playerPos) >= SunBurnConfig.GENERAL.burnLightLevel.get())
-            damagePlayer(player);
+        return false;
     }
 
-    private void damagePlayer(Player player) {
-        if (SunBurnConfig.GENERAL.bypassFireResist.get()) // Should we bypass the fire resist effect?
-        {
-            // if so damage them with our damage.
-            player.hurt(damageSource, SunBurnConfig.GENERAL.bypassDamage.get());
-            player.setSecondsOnFire(1);
-        } else player.setSecondsOnFire(SunBurnConfig.GENERAL.lengthOfBurn.get()); //otherwise use a regular burn.
+
+    private boolean validateTarget(BurnRulesData burnRules, Player player) {
+        boolean isProtectedGameMode = player.isCreative() || player.isSpectator();
+        if (isProtectedGameMode)
+            return false;
+
+        long time = player.level.getDayTime() % SunBurnConfig.SERVER.lengthOfDay.get();
+
+        boolean isMoistAndSafe = burnRules.wetStopsBurn() && player.isInWaterRainOrBubble();
+        boolean isSnowyAndSafe = burnRules.powderSnowStopsBurn() && (player.isInPowderSnow || player.wasInPowderSnow);
+        boolean isPlayerJoinProtected = player.tickCount <= burnRules.loadingSafeTime();
+        boolean withinTimeOfDayToBurn = time <= burnRules.startTime() || time >= burnRules.endTime();
+
+
+        return !isMoistAndSafe && !isSnowyAndSafe && !isPlayerJoinProtected && !withinTimeOfDayToBurn;
     }
 
-    private void damageGearRandomly(Player player, ItemStack stack, EquipmentSlot equipmentSlot) {
-        if (SunBurnConfig.GENERAL.damageEquippedGear.get() && player.level.random.nextFloat() * 30.0F < (player.getBrightness() - 0.4F) * 2.0F)
+    private boolean applyPlayerDamage(BurnRulesData burnRules, Player player) {
+        BlockPos playerPos = player.blockPosition();
+
+        if (player.getY() < burnRules.alwaysSafeBelowYLevel()) {
+            return false;
+        }
+
+        if (playerPos.getY() > burnRules.alwaysBurnAboveYLevel()) {
+            damagePlayer(burnRules, player);
+            return false;
+        }
+
+        int blockLightLevel = player.level.getLightEngine().getLayerListener(LightLayer.BLOCK).getLightValue(playerPos);
+        int skyLightLevel = player.level.getLightEngine().getLayerListener(LightLayer.SKY).getLightValue(playerPos);
+
+        if (blockLightLevel >= burnRules.blockLightBurnLevel() || skyLightLevel >= burnRules.skyLightBurnLevel())
+            damagePlayer(burnRules, player);
+
+        return true;
+    }
+
+    private void damagePlayer(BurnRulesData burnData, Player player) {
+        if (burnData.scalesWithDifficulty()) {
+            if (burnData.ignoreArmor() && burnData.ignoreMagic())
+                player.hurt(damageSource.bypassArmor().bypassMagic().setScalesWithDifficulty(), burnData.burnDamage());
+            else if (burnData.ignoreMagic())
+                player.hurt(damageSource.bypassMagic().setScalesWithDifficulty(), burnData.burnDamage());
+            else if (burnData.ignoreArmor())
+                player.hurt(damageSource.bypassArmor().setScalesWithDifficulty().setIsFire(), burnData.burnDamage());
+            else
+                player.hurt(damageSource.setScalesWithDifficulty().setIsFire(), burnData.burnDamage());
+        } else {
+            if (burnData.ignoreArmor() && burnData.ignoreMagic())
+                player.hurt(damageSource.bypassArmor().bypassMagic(), burnData.burnDamage());
+            else if (burnData.ignoreMagic())
+                player.hurt(damageSource.bypassMagic(), burnData.burnDamage());
+            else if (burnData.ignoreArmor())
+                player.hurt(damageSource.bypassArmor().setIsFire(), burnData.burnDamage());
+            else
+                player.hurt(damageSource.setIsFire(), burnData.burnDamage());
+        }
+
+        player.setSecondsOnFire(burnData.lengthOfBurn());
+    }
+
+    private void damageGearRandomly(BurnRulesData burnRules, Player player, ItemStack stack, EquipmentSlot equipmentSlot) {
+        if (burnRules.damageEquippedGear() && player.level.random.nextFloat() * 30.0F < (player.getBrightness() - 0.4F) * 2.0F)
             stack.hurtAndBreak(1, player, (player1 -> player1.broadcastBreakEvent(equipmentSlot)));
     }
 }

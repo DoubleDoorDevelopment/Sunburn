@@ -7,7 +7,6 @@ plugins {
     id("org.parchmentmc.librarian.forgegradle")
 }
 
-// Variable layout matching the gradle.properties. MATCH THE ORDERING!
 // Mod
 val modID: String by project
 val modName: String by project
@@ -19,11 +18,11 @@ val modDescription: String by project
 val modLicense: String by project
 val modVersion: String by project
 val modDisplayedAsResourcePack: String by project
-val modDisplayedAsResourcePackBoolean: Boolean = modDisplayedAsResourcePack.toBoolean()
+var modDisplayedAsResourcePackBoolean: Boolean = modDisplayedAsResourcePack.toBoolean()
 val modDisplayTest: String by project
 val modLogoFile: String by project
 val modLogoBlur: String by project
-val modLogoBlurBoolean: Boolean = modLogoBlur.toBoolean()
+var modLogoBlurBoolean: Boolean = modLogoBlur.toBoolean()
 val modUpdateURL: String by project
 
 // Resources
@@ -76,6 +75,14 @@ if (!arrayListOf("MATCH_VERSION", "IGNORE_SERVER_VERSION", "IGNORE_ALL_VERSION",
 
 if (forgeVersion.isEmpty() or forgeVersion.isBlank()) {
     throw InvalidUserDataException("Missing/Empty forgeVersion Variable!")
+}
+
+if (modLogoBlur.isEmpty() or modLogoBlur.isBlank()) {
+    modLogoBlurBoolean = true
+}
+
+if (modDisplayedAsResourcePack.isEmpty() or modDisplayedAsResourcePack.isBlank()) {
+    modDisplayedAsResourcePackBoolean = true
 }
 
 base {
@@ -138,9 +145,9 @@ tasks {
                         "displayURL=\"${modHomeURL}\"\n" +
                         "credits=\"${modCredits}\"\n" +
                         "authors=\"${modAuthors}\"\n" +
-                        "logoFile=\"${modLogoFile}\"" +
-                        "logoBlur=\"${modLogoBlur}\"" +
-                        "updateJSONURL=\"${modUpdateURL}\"" +
+                        "logoFile=\"${modLogoFile}\"\n" +
+                        "logoBlur=${modLogoBlur}\n" +
+                        "updateJSONURL=\"${modUpdateURL}\"\n" +
                         "description='''\n" +
                         "${modDescription}\n" +
                         "'''\n" +

@@ -1,0 +1,22 @@
+{
+  "dimension": "minecraft:overworld",
+  "biomes": [
+  ],
+  "burnDays": ">0",
+  "startTime": 1000,
+  "endTime": 15000,
+  "loadingSafeTime": 600,
+  "lengthOfBurn": 1,
+  "ignoreMagic": false,
+  "ignoreArmor": true,
+  "scalesWithDifficulty": true,
+  "burnDamage": 1,
+  "skyLightBurnLevel": 16,
+  "blockLightBurnLevel": 17,
+  "alwaysSafeBelowYLevel": 64,
+  "alwaysBurnAboveYLevel": 120,
+  "damageEquippedGear": false,
+  "wetStopsBurn": true,
+  "powderSnowStopsBurn": true,
+  "fullArmorToBlockBurn": false
+}
