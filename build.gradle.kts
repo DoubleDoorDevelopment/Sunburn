@@ -86,7 +86,7 @@ if (modDisplayedAsResourcePack.isEmpty() or modDisplayedAsResourcePack.isBlank()
 }
 
 base {
-    archivesName.set("${modID}-forge-${minecraftVersion}")
+    archivesName.set("${modID}-${modVersion}-forge")
 }
 
 java {
