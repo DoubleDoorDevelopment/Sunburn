@@ -38,7 +38,8 @@ public class BurnRulesValidator {
                     json.has("damageEquippedGear") && json.get("damageEquippedGear").getAsBoolean(),
                     !json.has("wetStopsBurn") || json.get("wetStopsBurn").getAsBoolean(),
                     !json.has("powderSnowStopsBurn") || json.get("powderSnowStopsBurn").getAsBoolean(),
-                    json.has("fullArmorToBlockBurn") && json.get("fullArmorToBlockBurn").getAsBoolean()
+                    json.has("fullArmorToBlockBurn") && json.get("fullArmorToBlockBurn").getAsBoolean(),
+                    json.has("deathMessage") ? json.get("deathMessage").getAsString() : "%1$s baked in the sun"
             );
         else
             throw new JsonParseException("Sunburn datapack error(s) preventing loading, refer to your game log for all the problems.");
@@ -48,10 +49,10 @@ public class BurnRulesValidator {
         HashBasedTable<ResourceLocation, String, BurnRulesData> rulesTable = HashBasedTable.create();
 
         dataMap.forEach((resourceLocation, data) -> {
-            if (!rulesTable.containsRow(resourceLocation))
-                rulesTable.put(resourceLocation, data.burnDays(), data);
+            if (!rulesTable.containsRow(data.dimension()))
+                rulesTable.put(data.dimension(), data.burnDays(), data);
             else {
-                rulesTable.row(resourceLocation).put(data.burnDays(), data);
+                rulesTable.row(data.dimension()).put(data.burnDays(), data);
             }
         });
 
@@ -95,11 +96,11 @@ public class BurnRulesValidator {
         }
 
         if (timeSubString.startsWith("<")) {
-            return currentDay < Integer.parseInt(timeSubString.substring(1));
+            return currentDay <= Integer.parseInt(timeSubString.substring(1));
         }
 
         if (timeSubString.startsWith(">")) {
-            return currentDay > Integer.parseInt(timeSubString.substring(1));
+            return currentDay >= Integer.parseInt(timeSubString.substring(1));
         }
 
         return currentDay == Integer.parseInt(timeSubString);
@@ -170,11 +171,10 @@ public class BurnRulesValidator {
             isComplete.set(false);
         }
 
-
         if (!json.has("endTime")) {
             LOGGER.error("{} Missing end time element. Add \"endTime\":15000 to your JSON, change the value if needed.", location);
             isComplete.set(false);
-        } else if (json.get("startTime").getAsInt() < json.get("endTime").getAsInt()) {
+        } else if (json.get("startTime").getAsInt() > json.get("endTime").getAsInt()) {
             LOGGER.error("{} End time can not be smaller than start time!", location);
             isComplete.set(false);
         }
@@ -198,11 +198,15 @@ public class BurnRulesValidator {
             LOGGER.error(location + " Missing burn length element. Add \"skyLightBurnLevel\":0 to your JSON, change the value if needed.");
             isComplete.set(false);
         }
+        if (json.get("skyLightBurnLevel").getAsInt() > 15)
+            LOGGER.warn("{} \"skyLightBurnLevel\" is greater than 15. Burning is disabled for sky light.", location);
 
         if (!json.has("blockLightBurnLevel")) {
             LOGGER.error(location + " Missing burn length element. Add \"blockLightBurnLevel\":-1 to your JSON, change the value if needed.");
             isComplete.set(false);
         }
+        if (json.get("blockLightBurnLevel").getAsInt() > 15)
+            LOGGER.warn("{} \"blockLightBurnLevel\" is greater than 15. Burning is disabled for block light.", location);
 
         if (!json.has("alwaysSafeBelowYLevel")) {
             LOGGER.error(location + " Missing burn length element. Add \"alwaysSafeBelowYLevel\":64 to your JSON, change the value if needed.");
@@ -212,8 +216,8 @@ public class BurnRulesValidator {
         if (!json.has("alwaysBurnAboveYLevel")) {
             LOGGER.error(location + " Missing burn length element. Add \"alwaysBurnAboveYLevel\":100 to your JSON, change the value if needed.");
             isComplete.set(false);
-        } else if (json.get("alwaysSafeBelowYLevel").getAsInt() < json.get("alwaysBurnAboveYLevel").getAsInt()) {
-            LOGGER.error("{} Always safe level can not be smaller than always burn level!", location);
+        } else if (json.get("alwaysSafeBelowYLevel").getAsInt() > json.get("alwaysBurnAboveYLevel").getAsInt()) {
+            LOGGER.error("{} Always safe level can not be larger than always burn level!", location);
             isComplete.set(false);
         }
 

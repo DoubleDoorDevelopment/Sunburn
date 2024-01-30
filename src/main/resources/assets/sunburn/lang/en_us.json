@@ -1,5 +1,4 @@
 {
   "sunburn.config.title": "Sunbun Settings",
-  "sunburn.config.lengthOfDay": "How long a day is in ticks. DO NOT CHANGE THIS UNLESS YOU USE A MOD TO CHANGE THE LENGTH OF DAY!",
-  "death.attack.sunburn": "%1$s burned up!"
+  "sunburn.config.lengthOfDay": "How long a day is in ticks. DO NOT CHANGE THIS UNLESS YOU USE A MOD TO CHANGE THE LENGTH OF DAY!"
 }

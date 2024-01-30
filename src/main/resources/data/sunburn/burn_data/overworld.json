@@ -10,13 +10,14 @@
   "ignoreMagic": false,
   "ignoreArmor": true,
   "scalesWithDifficulty": true,
-  "burnDamage": 1,
-  "skyLightBurnLevel": 16,
-  "blockLightBurnLevel": 17,
+  "burnDamage": 0.5,
+  "skyLightBurnLevel": 15,
+  "blockLightBurnLevel": 16,
   "alwaysSafeBelowYLevel": 64,
   "alwaysBurnAboveYLevel": 120,
   "damageEquippedGear": false,
   "wetStopsBurn": true,
   "powderSnowStopsBurn": true,
-  "fullArmorToBlockBurn": false
+  "fullArmorToBlockBurn": false,
+  "deathMessage": "%1$s baked in the sun"
 }

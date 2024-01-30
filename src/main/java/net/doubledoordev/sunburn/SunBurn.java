@@ -5,7 +5,6 @@ import net.doubledoordev.sunburn.data.BurnRulesValidator;
 import net.doubledoordev.sunburn.data.DataManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -23,13 +22,12 @@ import java.util.Map;
 @Mod("${modID}")
 public class SunBurn {
     public static final String MOD_ID = "${modID}";
-    DamageSource damageSource = new DamageSource("sunburn");
+    // MessageID is empty as the mod will run only on the server resulting in the client not having any translation keys.
+    BurnDamageSource damageSource = new BurnDamageSource("");
 
     public SunBurn() {
-        MinecraftForge.EVENT_BUS.register(SunBurn.class);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, SunBurnConfig.spec);
-
         MinecraftForge.EVENT_BUS.register(this);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, SunBurnConfig.spec);
     }
 
     @SubscribeEvent
@@ -39,7 +37,7 @@ public class SunBurn {
 
     @SubscribeEvent
     public void onPlayerTickEvent(TickEvent.PlayerTickEvent event) {
-        // Need to filter the client and end phase because of issues.
+        // Need to filter the client because we run on the server, we also want to apply everything once so ignore the end phase.
         boolean isServerStartPhase = event.side.isClient() || event.phase == TickEvent.Phase.END;
 
         if (isServerStartPhase)
@@ -53,10 +51,15 @@ public class SunBurn {
             String dayString = burnData.getKey();
             BurnRulesData burnRules = burnData.getValue();
 
-            if (BurnRulesValidator.isValidDay(targetDimDataLocation, dayString, dayCount) && inValidBiome(burnRules, player) &&
-                    validateTarget(burnRules, player)) {
+            if (BurnRulesValidator.isValidDay(targetDimDataLocation, dayString, dayCount) &&
+                    inValidBiome(burnRules, player) && isTargetUnsafe(burnRules, player)) {
 
-                if (applyPlayerDamage(burnRules, player)) {
+                if (player.getY() > burnRules.alwaysBurnAboveYLevel()) {
+                    damagePlayer(burnRules, player);
+                    return;
+                }
+
+                if (isInBurningLight(burnRules, player)) {
                     ItemStack headStack = player.getItemBySlot(EquipmentSlot.HEAD);
 
                     if (burnRules.fullArmorToBlockBurn()) {
@@ -71,13 +74,13 @@ public class SunBurn {
                             damageGearRandomly(burnRules, player, legStack, EquipmentSlot.LEGS);
                             damageGearRandomly(burnRules, player, feetStack, EquipmentSlot.FEET);
                             return;
-                        }
+                        } else damagePlayer(burnRules, player);
                     }
 
                     if (headStack.is(TagKeys.SUN_BLOCKING_ITEMS)) {
                         damageGearRandomly(burnRules, player, headStack, EquipmentSlot.HEAD);
                         return;
-                    }
+                    } else damagePlayer(burnRules, player);
                 }
 
             }
@@ -101,7 +104,7 @@ public class SunBurn {
     }
 
 
-    private boolean validateTarget(BurnRulesData burnRules, Player player) {
+    private boolean isTargetUnsafe(BurnRulesData burnRules, Player player) {
         boolean isProtectedGameMode = player.isCreative() || player.isSpectator();
         if (isProtectedGameMode)
             return false;
@@ -112,53 +115,41 @@ public class SunBurn {
         boolean isSnowyAndSafe = burnRules.powderSnowStopsBurn() && (player.isInPowderSnow || player.wasInPowderSnow);
         boolean isPlayerJoinProtected = player.tickCount <= burnRules.loadingSafeTime();
         boolean withinTimeOfDayToBurn = time <= burnRules.startTime() || time >= burnRules.endTime();
+        boolean isYSafe = player.getY() < burnRules.alwaysSafeBelowYLevel();
 
 
-        return !isMoistAndSafe && !isSnowyAndSafe && !isPlayerJoinProtected && !withinTimeOfDayToBurn;
+        return !isMoistAndSafe && !isSnowyAndSafe && !isPlayerJoinProtected && !withinTimeOfDayToBurn && !isYSafe;
     }
 
-    private boolean applyPlayerDamage(BurnRulesData burnRules, Player player) {
+    private boolean isInBurningLight(BurnRulesData burnRules, Player player) {
         BlockPos playerPos = player.blockPosition();
-
-        if (player.getY() < burnRules.alwaysSafeBelowYLevel()) {
-            return false;
-        }
-
-        if (playerPos.getY() > burnRules.alwaysBurnAboveYLevel()) {
-            damagePlayer(burnRules, player);
-            return false;
-        }
 
         int blockLightLevel = player.level.getLightEngine().getLayerListener(LightLayer.BLOCK).getLightValue(playerPos);
         int skyLightLevel = player.level.getLightEngine().getLayerListener(LightLayer.SKY).getLightValue(playerPos);
 
-        if (blockLightLevel >= burnRules.blockLightBurnLevel() || skyLightLevel >= burnRules.skyLightBurnLevel())
-            damagePlayer(burnRules, player);
-
-        return true;
+        return blockLightLevel >= burnRules.blockLightBurnLevel() || skyLightLevel >= burnRules.skyLightBurnLevel();
     }
 
     private void damagePlayer(BurnRulesData burnData, Player player) {
         if (burnData.scalesWithDifficulty()) {
             if (burnData.ignoreArmor() && burnData.ignoreMagic())
-                player.hurt(damageSource.bypassArmor().bypassMagic().setScalesWithDifficulty(), burnData.burnDamage());
+                player.hurt(damageSource.customMessage(burnData.deathMessage()).bypassArmor().bypassMagic().setScalesWithDifficulty(), burnData.burnDamage());
             else if (burnData.ignoreMagic())
-                player.hurt(damageSource.bypassMagic().setScalesWithDifficulty(), burnData.burnDamage());
+                player.hurt(damageSource.customMessage(burnData.deathMessage()).bypassMagic().setScalesWithDifficulty(), burnData.burnDamage());
             else if (burnData.ignoreArmor())
-                player.hurt(damageSource.bypassArmor().setScalesWithDifficulty().setIsFire(), burnData.burnDamage());
+                player.hurt(damageSource.customMessage(burnData.deathMessage()).bypassArmor().setScalesWithDifficulty().setIsFire(), burnData.burnDamage());
             else
-                player.hurt(damageSource.setScalesWithDifficulty().setIsFire(), burnData.burnDamage());
+                player.hurt(damageSource.customMessage(burnData.deathMessage()).setScalesWithDifficulty().setIsFire(), burnData.burnDamage());
         } else {
             if (burnData.ignoreArmor() && burnData.ignoreMagic())
-                player.hurt(damageSource.bypassArmor().bypassMagic(), burnData.burnDamage());
+                player.hurt(damageSource.customMessage(burnData.deathMessage()).bypassArmor().bypassMagic(), burnData.burnDamage());
             else if (burnData.ignoreMagic())
-                player.hurt(damageSource.bypassMagic(), burnData.burnDamage());
+                player.hurt(damageSource.customMessage(burnData.deathMessage()).bypassMagic(), burnData.burnDamage());
             else if (burnData.ignoreArmor())
-                player.hurt(damageSource.bypassArmor().setIsFire(), burnData.burnDamage());
+                player.hurt(damageSource.customMessage(burnData.deathMessage()).bypassArmor().setIsFire(), burnData.burnDamage());
             else
-                player.hurt(damageSource.setIsFire(), burnData.burnDamage());
+                player.hurt(damageSource.customMessage(burnData.deathMessage()).setIsFire(), burnData.burnDamage());
         }
-
         player.setSecondsOnFire(burnData.lengthOfBurn());
     }
 

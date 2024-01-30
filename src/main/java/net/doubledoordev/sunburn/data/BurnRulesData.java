@@ -11,7 +11,7 @@ public record BurnRulesData(ResourceLocation dimension, ArrayList<ResourceLocati
                             boolean ignoreMagic, boolean ignoreArmor, boolean scalesWithDifficulty, float burnDamage,
                             int skyLightBurnLevel, int blockLightBurnLevel, int alwaysSafeBelowYLevel,
                             int alwaysBurnAboveYLevel, boolean damageEquippedGear, boolean wetStopsBurn,
-                            boolean powderSnowStopsBurn, boolean fullArmorToBlockBurn) {
+                            boolean powderSnowStopsBurn, boolean fullArmorToBlockBurn, String deathMessage) {
     private static final Logger LOGGER = LogManager.getLogger();
 
     public BurnRulesData {

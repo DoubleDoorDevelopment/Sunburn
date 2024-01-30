@@ -58,7 +58,8 @@ Here is an example file.
   "damageEquippedGear": true,
   "wetStopsBurn": true,
   "powderSnowStopsBurn": true,
-  "fullArmorToBlockBurn": false
+  "fullArmorToBlockBurn": false,
+  "deathMessage": "%1$s baked in the sun"
 }
 ```
 
@@ -134,6 +135,11 @@ Requirements and information for a valid data file.
   * Required: No, Default: True
   * If the player is required to wear a Head, Chest, Legs and Feet parts of armor to block burning. Otherwise, anything
     in the `#sunburn:blocks_sun` Item tag will make the player safe.
+* `"deathMessage": ""`
+  * Required: No, Default: `%1$s baked in the sun`
+  * The message displayed when someone dies to this burn rule. `%1$s` will be replaced with the name of the player.
+    These messages are not translatable with lang files as the mod be installed only on the server and the client would
+    be missing the translations.
 
 ## Developers
 
