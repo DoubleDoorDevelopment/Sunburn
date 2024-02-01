@@ -180,41 +180,41 @@ public class BurnRulesValidator {
         }
 
         if (!json.has("loadingSafeTime")) {
-            LOGGER.error(location + " Missing safe time element. Add \"loadingSafeTime\":0 to your JSON, change the value if needed.");
+            LOGGER.error("{} Missing safe time element. Add \"loadingSafeTime\":0 to your JSON, change the value if needed.", location);
             isComplete.set(false);
         }
 
         if (!json.has("lengthOfBurn")) {
-            LOGGER.error(location + " Missing burn length element. Add \"lengthOfBurn\":1 to your JSON, change the value if needed.");
+            LOGGER.error("{} Missing burn length element. Add \"lengthOfBurn\":1 to your JSON, change the value if needed.", location);
             isComplete.set(false);
         }
 
         if (!json.has("burnDamage")) {
-            LOGGER.error(location + " Missing burn Damage element. Add \"burnDamage\":1 to your JSON, change the value if needed.");
+            LOGGER.error("{} Missing burn Damage element. Add \"burnDamage\":1 to your JSON, change the value if needed.", location);
             isComplete.set(false);
         }
 
         if (!json.has("skyLightBurnLevel")) {
-            LOGGER.error(location + " Missing burn length element. Add \"skyLightBurnLevel\":0 to your JSON, change the value if needed.");
+            LOGGER.error("{} Missing burn length element. Add \"skyLightBurnLevel\":0 to your JSON, change the value if needed.", location);
             isComplete.set(false);
         }
         if (json.get("skyLightBurnLevel").getAsInt() > 15)
             LOGGER.warn("{} \"skyLightBurnLevel\" is greater than 15. Burning is disabled for sky light.", location);
 
         if (!json.has("blockLightBurnLevel")) {
-            LOGGER.error(location + " Missing burn length element. Add \"blockLightBurnLevel\":-1 to your JSON, change the value if needed.");
+            LOGGER.error("{} Missing burn length element. Add \"blockLightBurnLevel\":-1 to your JSON, change the value if needed.", location);
             isComplete.set(false);
         }
         if (json.get("blockLightBurnLevel").getAsInt() > 15)
             LOGGER.warn("{} \"blockLightBurnLevel\" is greater than 15. Burning is disabled for block light.", location);
 
         if (!json.has("alwaysSafeBelowYLevel")) {
-            LOGGER.error(location + " Missing burn length element. Add \"alwaysSafeBelowYLevel\":64 to your JSON, change the value if needed.");
+            LOGGER.error("{} Missing burn length element. Add \"alwaysSafeBelowYLevel\":64 to your JSON, change the value if needed.", location);
             isComplete.set(false);
         }
 
         if (!json.has("alwaysBurnAboveYLevel")) {
-            LOGGER.error(location + " Missing burn length element. Add \"alwaysBurnAboveYLevel\":100 to your JSON, change the value if needed.");
+            LOGGER.error("{} Missing burn length element. Add \"alwaysBurnAboveYLevel\":100 to your JSON, change the value if needed.", location);
             isComplete.set(false);
         } else if (json.get("alwaysSafeBelowYLevel").getAsInt() > json.get("alwaysBurnAboveYLevel").getAsInt()) {
             LOGGER.error("{} Always safe level can not be larger than always burn level!", location);
